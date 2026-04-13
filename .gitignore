@@ -3,6 +3,11 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Archivos de configuración con secretos — nunca subir a GitHub
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+
 # User-specific files
 *.rsuser
 *.suo
