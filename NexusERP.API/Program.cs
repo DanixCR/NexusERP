@@ -1,21 +1,71 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using NexusERP.API.Middleware;
+using NexusERP.Core.Interfaces;
+using NexusERP.Core.Services;
+using NexusERP.Infrastructure.Data;
+using NexusERP.Infrastructure.Repositories;
+using NexusERP.Infrastructure.Services;
+using NexusERP.Infrastructure.Settings;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ── Base de datos ──────────────────────────────────────────────────────────────
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// ── Configuración con opciones tipadas ────────────────────────────────────────
+// En lugar de leer strings sueltos de IConfiguration, cada sección del JSON
+// se mapea a una clase POCO. Esto da autocompletado y detección de errores en tiempo de compilación.
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<SendGridSettings>(builder.Configuration.GetSection("SendGrid"));
+
+// ── Autenticación JWT ─────────────────────────────────────────────────────────
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()!;
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtSettings.Audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero // sin margen de tolerancia — el token expira exactamente cuando dice
+        };
+    });
+
+// ── Inyección de dependencias ─────────────────────────────────────────────────
+// Registrar en orden: Infrastructure primero, luego Core
+// AddScoped = una instancia por request HTTP (lo correcto para repositorios y servicios con estado de request)
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IPasswordService, BcryptPasswordService>();
+builder.Services.AddScoped<ITokenService, JwtTokenService>();
+builder.Services.AddScoped<IEmailService, SendGridEmailService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// ── API ───────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ── Pipeline de middleware (orden importa) ────────────────────────────────────
+// 1. Manejo global de excepciones — debe ser el primero para capturar todo
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 if (app.Environment.IsDevelopment())
-{
     app.MapOpenApi();
-}
 
 app.UseHttpsRedirection();
 
+// 2. Authentication antes de Authorization — valida el token JWT en cada request
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
