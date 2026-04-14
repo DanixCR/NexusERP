@@ -9,6 +9,7 @@ using NexusERP.Infrastructure.Data;
 using NexusERP.Infrastructure.Repositories;
 using NexusERP.Infrastructure.Services;
 using NexusERP.Infrastructure.Settings;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,7 +61,10 @@ var app = builder.Build();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
+    app.MapScalarApiReference();
+}
 
 app.UseHttpsRedirection();
 

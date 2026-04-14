@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dotnet tool install:*)",
       "Bash(dotnet ef migrations:*)",
-      "Bash(dotnet add:*)"
+      "Bash(dotnet add:*)",
+      "Bash(powershell:*)"
     ]
   }
 }
