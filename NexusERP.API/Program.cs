@@ -50,6 +50,25 @@ builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IEmailService, SendGridEmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// ── CORS ──────────────────────────────────────────────────────────────────────
+// AllowCredentials() es obligatorio para que el browser acepte Set-Cookie
+// en respuestas cross-origin (frontend en :5173, backend en otro puerto).
+// Con AllowCredentials NO se puede usar AllowAnyOrigin() — hay que listar orígenes explícitos.
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? ["http://localhost:5173"];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // ── API ───────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -67,6 +86,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// 2. CORS antes de Authentication — el preflight OPTIONS debe resolverse antes
+//    de que el middleware de auth intente validar un token que no existe aún
+app.UseCors("FrontendPolicy");
 
 // 2. Authentication antes de Authorization — valida el token JWT en cada request
 app.UseAuthentication();
