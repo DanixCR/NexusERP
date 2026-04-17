@@ -4,7 +4,9 @@
       "Bash(dotnet tool install:*)",
       "Bash(dotnet ef migrations:*)",
       "Bash(dotnet add:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
     ]
   }
 }
