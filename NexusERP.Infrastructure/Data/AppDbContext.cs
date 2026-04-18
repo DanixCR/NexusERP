@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Client> Clients => Set<Client>();
+    public DbSet<Project> Projects => Set<Project>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,6 +35,24 @@ public class AppDbContext : DbContext
             entity.Property(c => c.Phone).HasMaxLength(50).IsRequired();
             entity.Property(c => c.TaxId).HasMaxLength(50).IsRequired();
             entity.Property(c => c.Address).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Project>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Id).ValueGeneratedNever();
+            entity.Property(p => p.Name).HasMaxLength(300).IsRequired();
+            entity.Property(p => p.Description).HasMaxLength(2000);
+            entity.Property(p => p.Status)
+                  .HasConversion<string>()
+                  .HasMaxLength(30)
+                  .IsRequired();
+            entity.Property(p => p.Budget)
+                  .HasColumnType("decimal(18,2)");
+            entity.HasOne(p => p.Client)
+                  .WithMany()
+                  .HasForeignKey(p => p.ClientId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>
