@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projectService } from '../services/projectService'
 import { clientService } from '../services/clientService'
+import { employeeService } from '../services/employeeService'
 import type { CreateProjectRequest, UpdateProjectRequest, ProjectQueryParams } from '../types/project.types'
 
 export function useProjects(params?: ProjectQueryParams) {
@@ -16,6 +17,14 @@ export function useAllClients() {
   return useQuery({
     queryKey: ['clients-all'],
     queryFn: () => clientService.getAll({ page: 1, pageSize: 200 }),
+    staleTime: 60_000,
+  })
+}
+
+export function useAllEmployees() {
+  return useQuery({
+    queryKey: ['employees-all'],
+    queryFn: () => employeeService.getAll({ page: 1, pageSize: 200 }),
     staleTime: 60_000,
   })
 }

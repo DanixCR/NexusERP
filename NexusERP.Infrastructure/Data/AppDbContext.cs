@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<Ticket> Tickets => Set<Ticket>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,6 +83,35 @@ public class AppDbContext : DbContext
             entity.Property(p => p.Price).HasColumnType("decimal(18,2)");
             entity.Property(p => p.Category).HasMaxLength(200).IsRequired();
             entity.Ignore(p => p.IsLowStock);
+        });
+
+        modelBuilder.Entity<Ticket>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Id).ValueGeneratedNever();
+            entity.Property(t => t.Title).HasMaxLength(500).IsRequired();
+            entity.Property(t => t.Description).HasMaxLength(4000).IsRequired();
+            entity.Property(t => t.Priority)
+                  .HasConversion<string>()
+                  .HasMaxLength(20)
+                  .IsRequired();
+            entity.Property(t => t.Status)
+                  .HasConversion<string>()
+                  .HasMaxLength(20)
+                  .IsRequired();
+            entity.Property(t => t.Category).HasMaxLength(200).IsRequired();
+
+            entity.HasOne(t => t.Client)
+                  .WithMany()
+                  .HasForeignKey(t => t.ClientId)
+                  .OnDelete(DeleteBehavior.Restrict)
+                  .IsRequired(false);
+
+            entity.HasOne(t => t.AssignedEmployee)
+                  .WithMany()
+                  .HasForeignKey(t => t.AssignedEmployeeId)
+                  .OnDelete(DeleteBehavior.SetNull)
+                  .IsRequired(false);
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>

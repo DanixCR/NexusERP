@@ -23,6 +23,9 @@ export function DashboardPage() {
         <button className="btn-primary" onClick={() => navigate('/products')}>
           Inventario
         </button>
+        <button className="btn-primary" onClick={() => navigate('/tickets')}>
+          Tickets
+        </button>
         <button className="btn-secondary" onClick={logout}>
           Cerrar sesión
         </button>

@@ -57,6 +57,8 @@ builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+builder.Services.AddScoped<TicketService>();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 // AllowCredentials() es obligatorio para que el browser acepte Set-Cookie
@@ -78,7 +80,9 @@ builder.Services.AddCors(options =>
 });
 
 // ── API ───────────────────────────────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

@@ -37,11 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAccessTokenState(data.accessToken)
         setAccessToken(data.accessToken)
         setUser(data.user)
+        setIsLoading(false)
       })
       .catch(() => {
         // No había sesión activa — el usuario tendrá que loguearse
-      })
-      .finally(() => {
         if (mounted) setIsLoading(false)
       })
 

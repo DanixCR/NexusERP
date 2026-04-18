@@ -66,7 +66,12 @@ public class AuthController : ControllerBase
         if (!string.IsNullOrEmpty(token))
             await _authService.LogoutAsync(token);
 
-        Response.Cookies.Delete(RefreshTokenCookieName);
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+        });
         return NoContent();
     }
 
