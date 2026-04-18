@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { ClientsPage } from './pages/ClientsPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { EmployeesPage } from './pages/EmployeesPage'
+import { ProductsPage } from './pages/ProductsPage'
 
 // QueryClient es el caché central de React Query.
 // Se crea una sola vez fuera del componente para no recrearlo en cada render.
@@ -51,6 +52,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EmployeesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <ProtectedRoute>
+                  <ProductsPage />
                 </ProtectedRoute>
               }
             />

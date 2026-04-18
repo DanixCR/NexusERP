@@ -88,9 +88,9 @@ public class AuthController : ControllerBase
     {
         Response.Cookies.Append(RefreshTokenCookieName, token, new CookieOptions
         {
-            HttpOnly = true,   // JavaScript no puede leer esta cookie — protección XSS
-            Secure = true,     // Solo se envía por HTTPS
-            SameSite = SameSiteMode.Strict,
+            HttpOnly = true,          // JavaScript no puede leer esta cookie — protección XSS
+            Secure = true,            // Solo se envía por HTTPS
+            SameSite = SameSiteMode.None,  // Necesario para requests cross-site (frontend HTTP ↔ backend HTTPS)
             Expires = DateTimeOffset.UtcNow.AddDays(7)
         });
     }

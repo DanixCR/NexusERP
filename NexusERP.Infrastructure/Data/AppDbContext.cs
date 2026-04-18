@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Client> Clients => Set<Client>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<Product> Products => Set<Product>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,6 +69,19 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Position).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Department).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Salary).HasColumnType("decimal(18,2)");
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Id).ValueGeneratedNever();
+            entity.Property(p => p.Name).HasMaxLength(300).IsRequired();
+            entity.Property(p => p.Description).HasMaxLength(2000);
+            entity.Property(p => p.SKU).HasMaxLength(100).IsRequired();
+            entity.HasIndex(p => p.SKU).IsUnique();
+            entity.Property(p => p.Price).HasColumnType("decimal(18,2)");
+            entity.Property(p => p.Category).HasMaxLength(200).IsRequired();
+            entity.Ignore(p => p.IsLowStock);
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>

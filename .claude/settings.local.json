@@ -14,7 +14,8 @@
       "Bash(npx tsc *)",
       "Bash(git add *)",
       "Bash(git -C /c/Users/danch/source/repos/NexusERP add .)",
-      "Bash(git -C /c/Users/danch/source/repos/NexusERP status --short)"
+      "Bash(git -C /c/Users/danch/source/repos/NexusERP status --short)",
+      "Bash(git *)"
     ]
   }
 }

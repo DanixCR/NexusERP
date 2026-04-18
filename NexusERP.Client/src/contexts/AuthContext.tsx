@@ -17,20 +17,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // El accessToken vive en RAM: si el usuario recarga la página, lo pierde.
   // La cookie HttpOnly persiste. Al iniciar, llamamos al backend para ver si
   // hay una sesión válida — si la hay, el backend emite un nuevo accessToken.
+  //
+  // Por qué el flag `mounted`:
+  // React StrictMode ejecuta cada useEffect DOS veces en desarrollo
+  // (monta → limpia → remonta) para detectar efectos sin cleanup.
+  // Esto genera dos requests /auth/refresh concurrentes. Si el backend usa
+  // refresh tokens rotativos, el segundo request puede fallar con 401
+  // porque el primero ya consumió el token. Sin el flag, el .finally() del
+  // request fallido llamaría setIsLoading(false) con user=null, provocando
+  // un redirect al login aunque la sesión sea válida.
+  // Con el flag, solo el run que sobrevive al cleanup actualiza el estado.
   useEffect(() => {
+    let mounted = true
+
     authService
       .refresh()
       .then((data) => {
+        if (!mounted) return
         setAccessTokenState(data.accessToken)
-        setAccessToken(data.accessToken) // actualiza el puente para el interceptor
+        setAccessToken(data.accessToken)
         setUser(data.user)
       })
       .catch(() => {
         // No había sesión activa — el usuario tendrá que loguearse
       })
       .finally(() => {
-        setIsLoading(false)
+        if (mounted) setIsLoading(false)
       })
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   async function login(data: LoginRequest) {

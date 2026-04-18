@@ -430,6 +430,34 @@
 .badge-green { background: #dcfce7; color: #15803d; }
 .badge-red   { background: #fee2e2; color: #dc2626; }
 
+/* ── Stock bajo ──────────────────────────────────────────────────────────── */
+.stock-low {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* ── Botón de filtro toggle ──────────────────────────────────────────────── */
+.btn-filter {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.btn-filter-active {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #dc2626;
+  background: #fee2e2;
+  cursor: pointer;
+  font-size: 14px;
+  color: #dc2626;
+  font-weight: 600;
+}
+
 /* ── Filters bar ─────────────────────────────────────────────────────────── */
 .filters-bar {
   display: flex;
