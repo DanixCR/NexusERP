@@ -10,7 +10,11 @@
       "Bash(dotnet build *)",
       "Bash(ls C:/Users/danch/source/repos/NexusERP/*.sln*)",
       "Bash(ls C:/Users/danch/source/repos/NexusERP/*.slnx)",
-      "Bash(dotnet ef *)"
+      "Bash(dotnet ef *)",
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git -C /c/Users/danch/source/repos/NexusERP add .)",
+      "Bash(git -C /c/Users/danch/source/repos/NexusERP status --short)"
     ]
   }
 }
