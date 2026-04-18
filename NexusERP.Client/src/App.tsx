@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { ClientsPage } from './pages/ClientsPage'
 
 // QueryClient es el caché central de React Query.
 // Se crea una sola vez fuera del componente para no recrearlo en cada render.
@@ -24,6 +25,14 @@ function App() {
                 // ProtectedRoute redirige a /login si el usuario no está autenticado
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clients"
+              element={
+                <ProtectedRoute>
+                  <ClientsPage />
                 </ProtectedRoute>
               }
             />

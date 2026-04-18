@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Client> Clients => Set<Client>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,6 +22,18 @@ public class AppDbContext : DbContext
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.FirstName).HasMaxLength(100).IsRequired();
             entity.Property(u => u.LastName).HasMaxLength(100).IsRequired();
+        });
+
+        modelBuilder.Entity<Client>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Id).ValueGeneratedNever();
+            entity.HasIndex(c => c.TaxId).IsUnique();
+            entity.Property(c => c.Name).HasMaxLength(200).IsRequired();
+            entity.Property(c => c.Email).HasMaxLength(256).IsRequired();
+            entity.Property(c => c.Phone).HasMaxLength(50).IsRequired();
+            entity.Property(c => c.TaxId).HasMaxLength(50).IsRequired();
+            entity.Property(c => c.Address).HasMaxLength(500);
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>

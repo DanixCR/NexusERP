@@ -49,6 +49,8 @@ builder.Services.AddScoped<IPasswordService, BcryptPasswordService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IEmailService, SendGridEmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<ClientService>();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 // AllowCredentials() es obligatorio para que el browser acepte Set-Cookie

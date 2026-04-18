@@ -6,7 +6,11 @@
       "Bash(dotnet add:*)",
       "Bash(powershell:*)",
       "Bash(npm install *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(dotnet build *)",
+      "Bash(ls C:/Users/danch/source/repos/NexusERP/*.sln*)",
+      "Bash(ls C:/Users/danch/source/repos/NexusERP/*.slnx)",
+      "Bash(dotnet ef *)"
     ]
   }
 }
