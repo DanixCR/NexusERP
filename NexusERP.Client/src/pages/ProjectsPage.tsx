@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useProjects, useAllClients, useCreateProject, useUpdateProject, useDeleteProject } from '../hooks/useProjects'
 import type { Project, ProjectStatus, CreateProjectRequest, UpdateProjectRequest } from '../types/project.types'
 
@@ -31,6 +32,7 @@ type DeleteConfirm =
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function ProjectsPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | ''>('')
@@ -86,6 +88,7 @@ export function ProjectsPage() {
     <div className="page-container">
       {/* Cabecera */}
       <div className="page-header">
+        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
         <h1>Proyectos</h1>
         <button className="btn-primary" onClick={() => setModal({ open: true, mode: 'create' })}>
           + Nuevo proyecto

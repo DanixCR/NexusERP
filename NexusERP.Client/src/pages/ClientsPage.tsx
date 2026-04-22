@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useClients'
 import type { Client, CreateClientRequest } from '../types/client.types'
 
@@ -25,6 +26,7 @@ const EMPTY_FORM: CreateClientRequest = {
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function ClientsPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -80,6 +82,7 @@ export function ClientsPage() {
     <div className="page-container">
       {/* Cabecera */}
       <div className="page-header">
+        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
         <h1>Clientes</h1>
         <button className="btn-primary" onClick={openCreate}>
           + Nuevo cliente

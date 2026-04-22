@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTickets, useCreateTicket, useUpdateTicket, useDeleteTicket, useChangeTicketStatus } from '../hooks/useTickets'
 import { useAllClients, useAllEmployees } from '../hooks/useProjects'
 import type { Ticket, TicketPriority, TicketStatus, CreateTicketRequest } from '../types/ticket.types'
@@ -68,6 +69,7 @@ function toFormState(t: Ticket): FormState {
 }
 
 export function TicketsPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('')
@@ -162,6 +164,7 @@ export function TicketsPage() {
   return (
     <div className="page-container">
       <div className="page-header">
+        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
         <h1>Tickets</h1>
         <button className="btn-primary" onClick={openCreate}>
           + Nuevo ticket

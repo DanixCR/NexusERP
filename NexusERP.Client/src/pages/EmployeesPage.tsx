@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from '../hooks/useEmployees'
 import type { Employee, CreateEmployeeRequest, UpdateEmployeeRequest } from '../types/employee.types'
 
@@ -17,6 +18,7 @@ type DeleteConfirm =
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function EmployeesPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
@@ -69,6 +71,7 @@ export function EmployeesPage() {
     <div className="page-container">
       {/* Cabecera */}
       <div className="page-header">
+        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
         <h1>Empleados</h1>
         <button className="btn-primary" onClick={() => setModal({ open: true, mode: 'create' })}>
           + Nuevo empleado

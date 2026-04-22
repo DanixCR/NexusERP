@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../hooks/useProducts'
 import type { Product, CreateProductRequest, UpdateProductRequest } from '../types/product.types'
 
@@ -24,6 +25,7 @@ type DeleteConfirm =
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function ProductsPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -78,6 +80,7 @@ export function ProductsPage() {
     <div className="page-container">
       {/* Cabecera */}
       <div className="page-header">
+        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
         <h1>Inventario</h1>
         <button className="btn-primary" onClick={() => setModal({ open: true, mode: 'create' })}>
           + Nuevo producto
