@@ -15,7 +15,10 @@
       "Bash(git add *)",
       "Bash(git -C /c/Users/danch/source/repos/NexusERP add .)",
       "Bash(git -C /c/Users/danch/source/repos/NexusERP status --short)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(npx shadcn@latest init -d)",
+      "Bash(npx shadcn@latest add table dialog input select badge avatar dropdown-menu separator card textarea label -y)",
+      "Bash(del *)"
     ]
   }
 }

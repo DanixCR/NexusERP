@@ -28,6 +28,9 @@ var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // En .NET 8+ el middleware usa JsonWebTokenHandler (no JwtSecurityTokenHandler).
+        // MapInboundClaims = false evita que "sub" se renombre a ClaimTypes.NameIdentifier.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
