@@ -1,21 +1,35 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useProjects, useAllClients, useCreateProject, useUpdateProject, useDeleteProject } from '../hooks/useProjects'
 import type { Project, ProjectStatus, CreateProjectRequest, UpdateProjectRequest } from '../types/project.types'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 
 // ── Indicador visual de estado ───────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
-  Pending:    { label: 'Pendiente',    className: 'badge-gray'  },
-  InProgress: { label: 'En progreso', className: 'badge-blue'  },
-  Completed:  { label: 'Completado',  className: 'badge-green' },
-  Cancelled:  { label: 'Cancelado',   className: 'badge-red'   },
+  Pending:    { label: 'Pendiente',    className: 'border-zinc-300 text-zinc-600 bg-zinc-50' },
+  InProgress: { label: 'En progreso', className: 'border-blue-300 text-blue-700 bg-blue-50' },
+  Completed:  { label: 'Completado',  className: 'border-green-300 text-green-700 bg-green-50' },
+  Cancelled:  { label: 'Cancelado',   className: 'border-red-300 text-red-600 bg-red-50' },
 }
 
 function StatusBadge({ status }: { status: ProjectStatus }) {
   const { label, className } = STATUS_CONFIG[status]
-  return <span className={`status-badge ${className}`}>{label}</span>
+  return <Badge variant="outline" className={className}>{label}</Badge>
 }
 
 // ── Tipos de estado local ────────────────────────────────────────────────────
@@ -32,7 +46,6 @@ type DeleteConfirm =
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function ProjectsPage() {
-  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | ''>('')
@@ -63,16 +76,6 @@ export function ProjectsPage() {
   const updateProject = useUpdateProject()
   const deleteProject = useDeleteProject()
 
-  function handleStatusFilterChange(value: string) {
-    setStatusFilter(value as ProjectStatus | '')
-    setPage(1)
-  }
-
-  function handleClientFilterChange(value: string) {
-    setClientFilter(value)
-    setPage(1)
-  }
-
   async function handleDelete() {
     if (!deleteConfirm.open) return
     await deleteProject.mutateAsync(deleteConfirm.project.id)
@@ -85,127 +88,109 @@ export function ProjectsPage() {
   }
 
   return (
-    <div className="page-container">
-      {/* Cabecera */}
-      <div className="page-header">
-        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
-        <h1>Proyectos</h1>
-        <button className="btn-primary" onClick={() => setModal({ open: true, mode: 'create' })}>
-          + Nuevo proyecto
-        </button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Proyectos</h1>
+        <Button onClick={() => setModal({ open: true, mode: 'create' })}>+ Nuevo proyecto</Button>
       </div>
 
-      {/* Filtros */}
-      <div className="filters-bar">
-        <input
-          type="text"
-          className="filter-search"
+      <div className="flex flex-wrap gap-3">
+        <Input
           placeholder="Buscar por nombre o descripción..."
           value={search}
           onChange={e => setSearch(e.target.value)}
+          className="max-w-xs"
         />
-        <select
-          className="filter-select"
-          value={statusFilter}
-          onChange={e => handleStatusFilterChange(e.target.value)}
-        >
-          <option value="">Todos los estados</option>
-          <option value="Pending">Pendiente</option>
-          <option value="InProgress">En progreso</option>
-          <option value="Completed">Completado</option>
-          <option value="Cancelled">Cancelado</option>
-        </select>
-        <select
-          className="filter-select"
-          value={clientFilter}
-          onChange={e => handleClientFilterChange(e.target.value)}
-        >
-          <option value="">Todos los clientes</option>
-          {clientsData?.items.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        <Select value={statusFilter || 'all'} onValueChange={v => { setStatusFilter(v === 'all' ? '' : (v ?? '') as ProjectStatus); setPage(1) }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Todos los estados" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los estados</SelectItem>
+            <SelectItem value="Pending">Pendiente</SelectItem>
+            <SelectItem value="InProgress">En progreso</SelectItem>
+            <SelectItem value="Completed">Completado</SelectItem>
+            <SelectItem value="Cancelled">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={clientFilter || 'all'} onValueChange={v => { setClientFilter(v === 'all' ? '' : (v ?? '')); setPage(1) }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Todos los clientes" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los clientes</SelectItem>
+            {clientsData?.items.map(c => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Tabla */}
-      {isLoading && <p className="state-message">Cargando...</p>}
-      {isError && <p className="state-message error">Error al cargar proyectos.</p>}
+      {isLoading && <p className="py-6 text-center text-sm text-muted-foreground">Cargando...</p>}
+      {isError && <p className="py-6 text-center text-sm text-destructive">Error al cargar proyectos.</p>}
 
       {data && (
         <>
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Cliente</th>
-                  <th>Estado</th>
-                  <th>Inicio</th>
-                  <th>Vencimiento</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Inicio</TableHead>
+                  <TableHead>Vencimiento</TableHead>
+                  <TableHead className="w-[80px]">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="empty-row">
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                       No se encontraron proyectos.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
                 {data.items.map(project => (
-                  <tr key={project.id}>
-                    <td>
-                      <div className="cell-primary">{project.name}</div>
+                  <TableRow key={project.id}>
+                    <TableCell>
+                      <div className="font-medium">{project.name}</div>
                       {project.description && (
-                        <div className="cell-secondary">{project.description}</div>
+                        <div className="max-w-[280px] truncate text-sm text-muted-foreground">{project.description}</div>
                       )}
-                    </td>
-                    <td>{project.clientName}</td>
-                    <td><StatusBadge status={project.status} /></td>
-                    <td>{formatDate(project.startDate)}</td>
-                    <td>{formatDate(project.dueDate)}</td>
-                    <td className="actions-cell">
-                      <button
-                        className="btn-icon"
-                        title="Editar"
-                        onClick={() => setModal({ open: true, mode: 'edit', project })}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="btn-icon"
-                        title="Eliminar"
-                        onClick={() => setDeleteConfirm({ open: true, project })}
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                    <TableCell>{project.clientName}</TableCell>
+                    <TableCell><StatusBadge status={project.status} /></TableCell>
+                    <TableCell className="text-sm">{formatDate(project.startDate)}</TableCell>
+                    <TableCell className="text-sm">{formatDate(project.dueDate)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setModal({ open: true, mode: 'edit', project })}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ open: true, project })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {data.totalPages > 1 && (
-            <div className="pagination">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</button>
+            <div className="flex items-center justify-center gap-1 pt-2">
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</Button>
               {Array.from({ length: data.totalPages }, (_, i) => i + 1).map(p => (
-                <button
-                  key={p}
-                  className={p === page ? 'active' : ''}
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </button>
+                <Button key={p} variant={p === page ? 'default' : 'outline'} size="sm" onClick={() => setPage(p)}>{p}</Button>
               ))}
-              <button disabled={page === data.totalPages} onClick={() => setPage(p => p + 1)}>→</button>
+              <Button variant="outline" size="sm" disabled={page === data.totalPages} onClick={() => setPage(p => p + 1)}>→</Button>
             </div>
           )}
         </>
       )}
 
-      {/* Modal crear / editar */}
       {modal.open && (
         <ProjectModal
           mode={modal.mode}
@@ -223,7 +208,6 @@ export function ProjectsPage() {
         />
       )}
 
-      {/* Confirmación de eliminación */}
       {deleteConfirm.open && (
         <ConfirmDialog
           message={`¿Eliminar el proyecto "${deleteConfirm.project.name}"? Esta acción no se puede deshacer.`}
@@ -255,7 +239,7 @@ type FormState = {
   status: ProjectStatus
   startDate: string
   dueDate: string
-  budget: string   // string en el form, se convierte a number | null al enviar
+  budget: string
 }
 
 function ProjectModal({ mode, project, clients, onClose, onSave }: ProjectModalProps) {
@@ -273,15 +257,12 @@ function ProjectModal({ mode, project, clients, onClose, onSave }: ProjectModalP
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-
     if (!form.name || !form.clientId) {
       setError('Completá los campos obligatorios.')
       return
     }
-
     setIsSubmitting(true)
     setError(null)
-
     try {
       const base = {
         name:        form.name.trim(),
@@ -291,46 +272,30 @@ function ProjectModal({ mode, project, clients, onClose, onSave }: ProjectModalP
         dueDate:     form.dueDate   || null,
         budget:      form.budget !== '' ? parseFloat(form.budget) : null,
       }
-
-      if (mode === 'create') {
-        await onSave(base)
-      } else {
-        await onSave({ ...base, status: form.status })
-      }
+      await onSave(mode === 'create' ? base : { ...base, status: form.status })
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
-      if (status === 404) {
-        setError('El cliente seleccionado no existe.')
-      } else {
-        setError('Error inesperado. Intentá de nuevo.')
-      }
+      setError(status === 404 ? 'El cliente seleccionado no existe.' : 'Error inesperado. Intentá de nuevo.')
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{mode === 'create' ? 'Nuevo proyecto' : 'Editar proyecto'}</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{mode === 'create' ? 'Nuevo proyecto' : 'Editar proyecto'}</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Nombre *</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })}
-              disabled={isSubmitting}
-            />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-1.5">
+            <Label>Nombre *</Label>
+            <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} disabled={isSubmitting} />
           </div>
 
-          <div className="form-group">
-            <label>Descripción (opcional)</label>
-            <textarea
-              className="form-textarea"
+          <div className="grid gap-1.5">
+            <Label>Descripción (opcional)</Label>
+            <Textarea
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
               disabled={isSubmitting}
@@ -338,85 +303,70 @@ function ProjectModal({ mode, project, clients, onClose, onSave }: ProjectModalP
             />
           </div>
 
-          <div className="form-group">
-            <label>Cliente *</label>
-            <select
-              className="form-select"
-              value={form.clientId}
-              onChange={e => setForm({ ...form, clientId: e.target.value })}
-              disabled={isSubmitting}
-            >
-              <option value="">Seleccionar cliente...</option>
-              {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+          <div className="grid gap-1.5">
+            <Label>Cliente *</Label>
+            <Select value={form.clientId} onValueChange={v => setForm({ ...form, clientId: v ?? '' })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar cliente..." />
+              </SelectTrigger>
+              <SelectContent>
+                {mode === 'edit' && project && !clients.some(c => c.id === project.clientId) && (
+                  <SelectItem value={project.clientId}>{project.clientName}</SelectItem>
+                )}
+                {clients.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {mode === 'edit' && (
-            <div className="form-group">
-              <label>Estado *</label>
-              <select
-                className="form-select"
-                value={form.status}
-                onChange={e => setForm({ ...form, status: e.target.value as ProjectStatus })}
-                disabled={isSubmitting}
-              >
-                <option value="Pending">Pendiente</option>
-                <option value="InProgress">En progreso</option>
-                <option value="Completed">Completado</option>
-                <option value="Cancelled">Cancelado</option>
-              </select>
+            <div className="grid gap-1.5">
+              <Label>Estado *</Label>
+              <Select value={form.status} onValueChange={v => setForm({ ...form, status: (v ?? form.status) as ProjectStatus })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pendiente</SelectItem>
+                  <SelectItem value="InProgress">En progreso</SelectItem>
+                  <SelectItem value="Completed">Completado</SelectItem>
+                  <SelectItem value="Cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
 
-          <div className="form-group">
-            <label>Presupuesto (opcional)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
+          <div className="grid gap-1.5">
+            <Label>Presupuesto (opcional)</Label>
+            <Input
+              type="number" min="0" step="0.01" placeholder="0.00"
               value={form.budget}
               onChange={e => setForm({ ...form, budget: e.target.value })}
               disabled={isSubmitting}
             />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Fecha inicio</label>
-              <input
-                type="date"
-                value={form.startDate}
-                onChange={e => setForm({ ...form, startDate: e.target.value })}
-                disabled={isSubmitting}
-              />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Fecha inicio</Label>
+              <Input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} disabled={isSubmitting} />
             </div>
-            <div className="form-group">
-              <label>Fecha límite</label>
-              <input
-                type="date"
-                value={form.dueDate}
-                onChange={e => setForm({ ...form, dueDate: e.target.value })}
-                disabled={isSubmitting}
-              />
+            <div className="grid gap-1.5">
+              <Label>Fecha límite</Label>
+              <Input type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} disabled={isSubmitting} />
             </div>
           </div>
 
-          {error && <p className="auth-error">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -431,16 +381,19 @@ type ConfirmDialogProps = {
 
 function ConfirmDialog({ message, isLoading, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-card confirm-dialog" onClick={e => e.stopPropagation()}>
-        <p>{message}</p>
-        <div className="modal-actions">
-          <button className="btn-secondary" onClick={onCancel} disabled={isLoading}>Cancelar</button>
-          <button className="btn-danger" onClick={onConfirm} disabled={isLoading}>
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Confirmar eliminación</DialogTitle>
+          <DialogDescription>{message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={isLoading}>Cancelar</Button>
+          <Button variant="destructive" onClick={onConfirm} disabled={isLoading}>
             {isLoading ? 'Eliminando...' : 'Eliminar'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

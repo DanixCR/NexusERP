@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useClients'
 import type { Client, CreateClientRequest } from '../types/client.types'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 
 // ── Tipos de estado local ────────────────────────────────────────────────────
 
@@ -26,18 +35,16 @@ const EMPTY_FORM: CreateClientRequest = {
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function ClientsPage() {
-  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [modal, setModal] = useState<ModalState>({ open: false })
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm>({ open: false })
 
-  // Debounce: espera 300ms después del último keypress para actualizar la búsqueda real
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search)
-      setPage(1)  // volver a la página 1 al cambiar el filtro
+      setPage(1)
     }, 300)
     return () => clearTimeout(timer)
   }, [search])
@@ -52,25 +59,11 @@ export function ClientsPage() {
   const updateClient = useUpdateClient()
   const deleteClient = useDeleteClient()
 
-  function openCreate() {
-    setModal({ open: true, mode: 'create' })
-  }
-
-  function openEdit(client: Client) {
-    setModal({ open: true, mode: 'edit', client })
-  }
-
-  function closeModal() {
-    setModal({ open: false })
-  }
-
-  function openDeleteConfirm(client: Client) {
-    setDeleteConfirm({ open: true, client })
-  }
-
-  function closeDeleteConfirm() {
-    setDeleteConfirm({ open: false })
-  }
+  function openCreate() { setModal({ open: true, mode: 'create' }) }
+  function openEdit(client: Client) { setModal({ open: true, mode: 'edit', client }) }
+  function closeModal() { setModal({ open: false }) }
+  function openDeleteConfirm(client: Client) { setDeleteConfirm({ open: true, client }) }
+  function closeDeleteConfirm() { setDeleteConfirm({ open: false }) }
 
   async function handleDelete() {
     if (!deleteConfirm.open) return
@@ -79,109 +72,84 @@ export function ClientsPage() {
   }
 
   return (
-    <div className="page-container">
-      {/* Cabecera */}
-      <div className="page-header">
-        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
-        <h1>Clientes</h1>
-        <button className="btn-primary" onClick={openCreate}>
-          + Nuevo cliente
-        </button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
+        <Button onClick={openCreate}>+ Nuevo cliente</Button>
       </div>
 
-      {/* Buscador */}
-      <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Buscar por nombre, email o RUC..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-      </div>
+      <Input
+        placeholder="Buscar por nombre, email o RUC..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
 
-      {/* Tabla */}
-      {isLoading && <p className="state-message">Cargando...</p>}
-      {isError && <p className="state-message error">Error al cargar clientes.</p>}
+      {isLoading && <p className="py-6 text-center text-sm text-muted-foreground">Cargando...</p>}
+      {isError && <p className="py-6 text-center text-sm text-destructive">Error al cargar clientes.</p>}
 
       {data && (
         <>
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Email</th>
-                  <th>Teléfono</th>
-                  <th>RUC / Tax ID</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Teléfono</TableHead>
+                  <TableHead>RUC / Tax ID</TableHead>
+                  <TableHead className="w-[80px]">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="empty-row">
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                       No se encontraron clientes.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
                 {data.items.map(client => (
-                  <tr key={client.id}>
-                    <td>{client.name}</td>
-                    <td>{client.email}</td>
-                    <td>{client.phone}</td>
-                    <td>{client.taxId}</td>
-                    <td className="actions-cell">
-                      <button
-                        className="btn-icon"
-                        title="Editar"
-                        onClick={() => openEdit(client)}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="btn-icon"
-                        title="Eliminar"
-                        onClick={() => openDeleteConfirm(client)}
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
+                  <TableRow key={client.id}>
+                    <TableCell className="font-medium">{client.name}</TableCell>
+                    <TableCell>{client.email}</TableCell>
+                    <TableCell>{client.phone}</TableCell>
+                    <TableCell>{client.taxId}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(client)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(client)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
-          {/* Paginación */}
           {data.totalPages > 1 && (
-            <div className="pagination">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage(p => p - 1)}
-              >
-                ←
-              </button>
+            <div className="flex items-center justify-center gap-1 pt-2">
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</Button>
               {Array.from({ length: data.totalPages }, (_, i) => i + 1).map(p => (
-                <button
+                <Button
                   key={p}
-                  className={p === page ? 'active' : ''}
+                  variant={p === page ? 'default' : 'outline'}
+                  size="sm"
                   onClick={() => setPage(p)}
                 >
                   {p}
-                </button>
+                </Button>
               ))}
-              <button
-                disabled={page === data.totalPages}
-                onClick={() => setPage(p => p + 1)}
-              >
-                →
-              </button>
+              <Button variant="outline" size="sm" disabled={page === data.totalPages} onClick={() => setPage(p => p + 1)}>→</Button>
             </div>
           )}
         </>
       )}
 
-      {/* Modal crear / editar */}
       {modal.open && (
         <ClientModal
           mode={modal.mode}
@@ -198,7 +166,6 @@ export function ClientsPage() {
         />
       )}
 
-      {/* Diálogo de confirmación de eliminación */}
       {deleteConfirm.open && (
         <ConfirmDialog
           message={`¿Eliminar a "${deleteConfirm.client.name}"? Esta acción no se puede deshacer.`}
@@ -224,107 +191,66 @@ function ClientModal({ mode, client, onClose, onSave }: ClientModalProps) {
   const [form, setForm] = useState<CreateClientRequest>(
     client
       ? { name: client.name, email: client.email, phone: client.phone, taxId: client.taxId, address: client.address }
-      : EMPTY_FORM
+      : EMPTY_FORM,
   )
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-
     if (!form.name || !form.email || !form.phone || !form.taxId) {
       setError('Completá los campos obligatorios.')
       return
     }
-
     setIsSubmitting(true)
     setError(null)
-
     try {
       await onSave(form)
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
-      if (status === 409) {
-        setError('Ya existe un cliente con ese RUC / Tax ID.')
-      } else {
-        setError('Error inesperado. Intentá de nuevo.')
-      }
+      setError(status === 409 ? 'Ya existe un cliente con ese RUC / Tax ID.' : 'Error inesperado. Intentá de nuevo.')
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{mode === 'create' ? 'Nuevo cliente' : 'Editar cliente'}</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{mode === 'create' ? 'Nuevo cliente' : 'Editar cliente'}</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Nombre *</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })}
-              disabled={isSubmitting}
-            />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-1.5">
+            <Label>Nombre *</Label>
+            <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} disabled={isSubmitting} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Email *</Label>
+            <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} disabled={isSubmitting} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Teléfono *</Label>
+            <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} disabled={isSubmitting} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>RUC / Identificador fiscal *</Label>
+            <Input value={form.taxId} onChange={e => setForm({ ...form, taxId: e.target.value })} disabled={isSubmitting} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Dirección (opcional)</Label>
+            <Input value={form.address ?? ''} onChange={e => setForm({ ...form, address: e.target.value || null })} disabled={isSubmitting} />
           </div>
 
-          <div className="form-group">
-            <label>Email *</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
-              disabled={isSubmitting}
-            />
-          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <div className="form-group">
-            <label>Teléfono *</label>
-            <input
-              type="text"
-              value={form.phone}
-              onChange={e => setForm({ ...form, phone: e.target.value })}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>RUC / Identificador fiscal *</label>
-            <input
-              type="text"
-              value={form.taxId}
-              onChange={e => setForm({ ...form, taxId: e.target.value })}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Dirección (opcional)</label>
-            <input
-              type="text"
-              value={form.address ?? ''}
-              onChange={e => setForm({ ...form, address: e.target.value || null })}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {error && <p className="auth-error">{error}</p>}
-
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -339,18 +265,19 @@ type ConfirmDialogProps = {
 
 function ConfirmDialog({ message, isLoading, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-card confirm-dialog" onClick={e => e.stopPropagation()}>
-        <p>{message}</p>
-        <div className="modal-actions">
-          <button className="btn-secondary" onClick={onCancel} disabled={isLoading}>
-            Cancelar
-          </button>
-          <button className="btn-danger" onClick={onConfirm} disabled={isLoading}>
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Confirmar eliminación</DialogTitle>
+          <DialogDescription>{message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={isLoading}>Cancelar</Button>
+          <Button variant="destructive" onClick={onConfirm} disabled={isLoading}>
             {isLoading ? 'Eliminando...' : 'Eliminar'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

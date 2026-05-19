@@ -1,8 +1,20 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from '../hooks/useEmployees'
 import type { Employee, CreateEmployeeRequest, UpdateEmployeeRequest } from '../types/employee.types'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 
 // ── Tipos de estado local ────────────────────────────────────────────────────
 
@@ -18,7 +30,6 @@ type DeleteConfirm =
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function EmployeesPage() {
-  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
@@ -47,11 +58,6 @@ export function EmployeesPage() {
 
   const departments = [...new Set((data?.items ?? []).map(e => e.department))].sort()
 
-  function handleDepartmentFilterChange(value: string) {
-    setDepartmentFilter(value)
-    setPage(1)
-  }
-
   async function handleDelete() {
     if (!deleteConfirm.open) return
     await deleteEmployee.mutateAsync(deleteConfirm.employee.id)
@@ -68,114 +74,95 @@ export function EmployeesPage() {
   }
 
   return (
-    <div className="page-container">
-      {/* Cabecera */}
-      <div className="page-header">
-        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
-        <h1>Empleados</h1>
-        <button className="btn-primary" onClick={() => setModal({ open: true, mode: 'create' })}>
-          + Nuevo empleado
-        </button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Empleados</h1>
+        <Button onClick={() => setModal({ open: true, mode: 'create' })}>+ Nuevo empleado</Button>
       </div>
 
-      {/* Filtros */}
-      <div className="filters-bar">
-        <input
-          type="text"
-          className="filter-search"
+      <div className="flex flex-wrap gap-3">
+        <Input
           placeholder="Buscar por nombre o puesto..."
           value={search}
           onChange={e => setSearch(e.target.value)}
+          className="max-w-xs"
         />
-        <select
-          className="filter-select"
-          value={departmentFilter}
-          onChange={e => handleDepartmentFilterChange(e.target.value)}
-        >
-          <option value="">Todos los departamentos</option>
-          {departments.map(dept => (
-            <option key={dept} value={dept}>{dept}</option>
-          ))}
-        </select>
+        <Select value={departmentFilter || 'all'} onValueChange={v => { setDepartmentFilter(v === 'all' ? '' : (v ?? '')); setPage(1) }}>
+          <SelectTrigger className="w-[210px]">
+            <SelectValue placeholder="Todos los departamentos" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los departamentos</SelectItem>
+            {departments.map(dept => (
+              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Tabla */}
-      {isLoading && <p className="state-message">Cargando...</p>}
-      {isError && <p className="state-message error">Error al cargar empleados.</p>}
+      {isLoading && <p className="py-6 text-center text-sm text-muted-foreground">Cargando...</p>}
+      {isError && <p className="py-6 text-center text-sm text-destructive">Error al cargar empleados.</p>}
 
       {data && (
         <>
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Puesto</th>
-                  <th>Departamento</th>
-                  <th>Contratación</th>
-                  <th>Salario</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Puesto</TableHead>
+                  <TableHead>Departamento</TableHead>
+                  <TableHead>Contratación</TableHead>
+                  <TableHead>Salario</TableHead>
+                  <TableHead className="w-[80px]">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="empty-row">
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                       No se encontraron empleados.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
                 {data.items.map(employee => (
-                  <tr key={employee.id}>
-                    <td>
-                      <div className="cell-primary">{employee.lastName}, {employee.firstName}</div>
-                      <div className="cell-secondary">{employee.email}</div>
-                    </td>
-                    <td>{employee.position}</td>
-                    <td>{employee.department}</td>
-                    <td>{formatDate(employee.hireDate)}</td>
-                    <td>{formatSalary(employee.salary)}</td>
-                    <td className="actions-cell">
-                      <button
-                        className="btn-icon"
-                        title="Editar"
-                        onClick={() => setModal({ open: true, mode: 'edit', employee })}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="btn-icon"
-                        title="Eliminar"
-                        onClick={() => setDeleteConfirm({ open: true, employee })}
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
+                  <TableRow key={employee.id}>
+                    <TableCell>
+                      <div className="font-medium">{employee.lastName}, {employee.firstName}</div>
+                      <div className="text-sm text-muted-foreground">{employee.email}</div>
+                    </TableCell>
+                    <TableCell>{employee.position}</TableCell>
+                    <TableCell>{employee.department}</TableCell>
+                    <TableCell className="text-sm">{formatDate(employee.hireDate)}</TableCell>
+                    <TableCell className="text-sm">{formatSalary(employee.salary)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setModal({ open: true, mode: 'edit', employee })}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ open: true, employee })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {data.totalPages > 1 && (
-            <div className="pagination">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</button>
+            <div className="flex items-center justify-center gap-1 pt-2">
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</Button>
               {Array.from({ length: data.totalPages }, (_, i) => i + 1).map(p => (
-                <button
-                  key={p}
-                  className={p === page ? 'active' : ''}
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </button>
+                <Button key={p} variant={p === page ? 'default' : 'outline'} size="sm" onClick={() => setPage(p)}>{p}</Button>
               ))}
-              <button disabled={page === data.totalPages} onClick={() => setPage(p => p + 1)}>→</button>
+              <Button variant="outline" size="sm" disabled={page === data.totalPages} onClick={() => setPage(p => p + 1)}>→</Button>
             </div>
           )}
         </>
       )}
 
-      {/* Modal crear / editar */}
       {modal.open && (
         <EmployeeModal
           mode={modal.mode}
@@ -192,7 +179,6 @@ export function EmployeesPage() {
         />
       )}
 
-      {/* Confirmación de eliminación */}
       {deleteConfirm.open && (
         <ConfirmDialog
           message={`¿Eliminar a ${deleteConfirm.employee.fullName}? Esta acción no se puede deshacer.`}
@@ -241,15 +227,12 @@ function EmployeeModal({ mode, employee, onClose, onSave }: EmployeeModalProps) 
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-
     if (!form.firstName || !form.lastName || !form.email || !form.position || !form.department || !form.hireDate || !form.salary) {
       setError('Completá todos los campos obligatorios.')
       return
     }
-
     setIsSubmitting(true)
     setError(null)
-
     try {
       await onSave({
         firstName:  form.firstName.trim(),
@@ -263,122 +246,75 @@ function EmployeeModal({ mode, employee, onClose, onSave }: EmployeeModalProps) 
       })
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
-      if (status === 409) {
-        setError('Ya existe un empleado con ese email.')
-      } else {
-        setError('Error inesperado. Intentá de nuevo.')
-      }
+      setError(status === 409 ? 'Ya existe un empleado con ese email.' : 'Error inesperado. Intentá de nuevo.')
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{mode === 'create' ? 'Nuevo empleado' : 'Editar empleado'}</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{mode === 'create' ? 'Nuevo empleado' : 'Editar empleado'}</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Nombre *</label>
-              <input
-                type="text"
-                value={form.firstName}
-                onChange={e => setForm({ ...form, firstName: e.target.value })}
-                disabled={isSubmitting}
-              />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Nombre *</Label>
+              <Input value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} disabled={isSubmitting} />
             </div>
-            <div className="form-group">
-              <label>Apellido *</label>
-              <input
-                type="text"
-                value={form.lastName}
-                onChange={e => setForm({ ...form, lastName: e.target.value })}
-                disabled={isSubmitting}
-              />
+            <div className="grid gap-1.5">
+              <Label>Apellido *</Label>
+              <Input value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} disabled={isSubmitting} />
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Email *</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
-              disabled={isSubmitting}
-            />
+          <div className="grid gap-1.5">
+            <Label>Email *</Label>
+            <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} disabled={isSubmitting} />
           </div>
 
-          <div className="form-group">
-            <label>Teléfono (opcional)</label>
-            <input
-              type="text"
-              value={form.phone}
-              onChange={e => setForm({ ...form, phone: e.target.value })}
-              disabled={isSubmitting}
-            />
+          <div className="grid gap-1.5">
+            <Label>Teléfono (opcional)</Label>
+            <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} disabled={isSubmitting} />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Puesto *</label>
-              <input
-                type="text"
-                value={form.position}
-                onChange={e => setForm({ ...form, position: e.target.value })}
-                disabled={isSubmitting}
-              />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Puesto *</Label>
+              <Input value={form.position} onChange={e => setForm({ ...form, position: e.target.value })} disabled={isSubmitting} />
             </div>
-            <div className="form-group">
-              <label>Departamento *</label>
-              <input
-                type="text"
-                value={form.department}
-                onChange={e => setForm({ ...form, department: e.target.value })}
-                disabled={isSubmitting}
-              />
+            <div className="grid gap-1.5">
+              <Label>Departamento *</Label>
+              <Input value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} disabled={isSubmitting} />
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Fecha de contratación *</label>
-            <input
-              type="date"
-              value={form.hireDate}
-              onChange={e => setForm({ ...form, hireDate: e.target.value })}
-              disabled={isSubmitting}
-            />
+          <div className="grid gap-1.5">
+            <Label>Fecha de contratación *</Label>
+            <Input type="date" value={form.hireDate} onChange={e => setForm({ ...form, hireDate: e.target.value })} disabled={isSubmitting} />
           </div>
 
-          <div className="form-group">
-            <label>Salario *</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
+          <div className="grid gap-1.5">
+            <Label>Salario *</Label>
+            <Input
+              type="number" min="0" step="0.01" placeholder="0.00"
               value={form.salary}
               onChange={e => setForm({ ...form, salary: e.target.value })}
               disabled={isSubmitting}
             />
           </div>
 
-          {error && <p className="auth-error">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -393,16 +329,19 @@ type ConfirmDialogProps = {
 
 function ConfirmDialog({ message, isLoading, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-card confirm-dialog" onClick={e => e.stopPropagation()}>
-        <p>{message}</p>
-        <div className="modal-actions">
-          <button className="btn-secondary" onClick={onCancel} disabled={isLoading}>Cancelar</button>
-          <button className="btn-danger" onClick={onConfirm} disabled={isLoading}>
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Confirmar eliminación</DialogTitle>
+          <DialogDescription>{message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={isLoading}>Cancelar</Button>
+          <Button variant="destructive" onClick={onConfirm} disabled={isLoading}>
             {isLoading ? 'Eliminando...' : 'Eliminar'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

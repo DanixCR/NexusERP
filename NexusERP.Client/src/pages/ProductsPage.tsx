@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Pencil, Trash2, AlertTriangle } from 'lucide-react'
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../hooks/useProducts'
 import type { Product, CreateProductRequest, UpdateProductRequest } from '../types/product.types'
-
-// ── Stock cell ───────────────────────────────────────────────────────────────
-
-function StockCell({ stock, minimumStock, isLowStock }: { stock: number; minimumStock: number; isLowStock: boolean }) {
-  if (!isLowStock) return <span>{stock}</span>
-  return <span className="stock-low">⚠ {stock}/{minimumStock}</span>
-}
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 
 // ── Tipos de estado local ────────────────────────────────────────────────────
 
@@ -25,7 +32,6 @@ type DeleteConfirm =
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function ProductsPage() {
-  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -56,16 +62,6 @@ export function ProductsPage() {
 
   const categories = [...new Set((data?.items ?? []).map(p => p.category))].sort()
 
-  function handleCategoryChange(value: string) {
-    setCategoryFilter(value)
-    setPage(1)
-  }
-
-  function handleLowStockToggle() {
-    setLowStockOnly(prev => !prev)
-    setPage(1)
-  }
-
   async function handleDelete() {
     if (!deleteConfirm.open) return
     await deleteProduct.mutateAsync(deleteConfirm.product.id)
@@ -77,124 +73,110 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="page-container">
-      {/* Cabecera */}
-      <div className="page-header">
-        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
-        <h1>Inventario</h1>
-        <button className="btn-primary" onClick={() => setModal({ open: true, mode: 'create' })}>
-          + Nuevo producto
-        </button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Inventario</h1>
+        <Button onClick={() => setModal({ open: true, mode: 'create' })}>+ Nuevo producto</Button>
       </div>
 
-      {/* Filtros */}
-      <div className="filters-bar">
-        <input
-          type="text"
-          className="filter-search"
+      <div className="flex flex-wrap gap-3">
+        <Input
           placeholder="Buscar por nombre o SKU..."
           value={search}
           onChange={e => setSearch(e.target.value)}
+          className="max-w-xs"
         />
-        <select
-          className="filter-select"
-          value={categoryFilter}
-          onChange={e => handleCategoryChange(e.target.value)}
+        <Select value={categoryFilter || 'all'} onValueChange={v => { setCategoryFilter(v === 'all' ? '' : (v ?? '')); setPage(1) }}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Todas las categorías" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las categorías</SelectItem>
+            {categories.map(cat => (
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant={lowStockOnly ? 'destructive' : 'outline'}
+          size="sm"
+          onClick={() => { setLowStockOnly(prev => !prev); setPage(1) }}
         >
-          <option value="">Todas las categorías</option>
-          {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-        <button
-          className={lowStockOnly ? 'btn-filter-active' : 'btn-filter'}
-          onClick={handleLowStockToggle}
-        >
-          ⚠ Stock bajo
-        </button>
+          <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
+          Stock bajo
+        </Button>
       </div>
 
-      {/* Tabla */}
-      {isLoading && <p className="state-message">Cargando...</p>}
-      {isError && <p className="state-message error">Error al cargar productos.</p>}
+      {isLoading && <p className="py-6 text-center text-sm text-muted-foreground">Cargando...</p>}
+      {isError && <p className="py-6 text-center text-sm text-destructive">Error al cargar productos.</p>}
 
       {data && (
         <>
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre / SKU</th>
-                  <th>Categoría</th>
-                  <th>Precio</th>
-                  <th>Stock</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre / SKU</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Precio</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead className="w-[80px]">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="empty-row">
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                       No se encontraron productos.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
                 {data.items.map(product => (
-                  <tr key={product.id}>
-                    <td>
-                      <div className="cell-primary">{product.name}</div>
-                      <div className="cell-secondary">{product.sku}</div>
-                    </td>
-                    <td>{product.category}</td>
-                    <td>{formatPrice(product.price)}</td>
-                    <td>
-                      <StockCell
-                        stock={product.stock}
-                        minimumStock={product.minimumStock}
-                        isLowStock={product.isLowStock}
-                      />
-                    </td>
-                    <td className="actions-cell">
-                      <button
-                        className="btn-icon"
-                        title="Editar"
-                        onClick={() => setModal({ open: true, mode: 'edit', product })}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="btn-icon"
-                        title="Eliminar"
-                        onClick={() => setDeleteConfirm({ open: true, product })}
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      <div className="font-medium">{product.name}</div>
+                      <div className="text-sm text-muted-foreground">{product.sku}</div>
+                    </TableCell>
+                    <TableCell>{product.category}</TableCell>
+                    <TableCell className="text-sm">{formatPrice(product.price)}</TableCell>
+                    <TableCell>
+                      {product.isLowStock ? (
+                        <Badge variant="destructive" className="gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {product.stock}/{product.minimumStock}
+                        </Badge>
+                      ) : (
+                        <span className="text-sm">{product.stock}</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setModal({ open: true, mode: 'edit', product })}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ open: true, product })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {data.totalPages > 1 && (
-            <div className="pagination">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</button>
+            <div className="flex items-center justify-center gap-1 pt-2">
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</Button>
               {Array.from({ length: data.totalPages }, (_, i) => i + 1).map(p => (
-                <button
-                  key={p}
-                  className={p === page ? 'active' : ''}
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </button>
+                <Button key={p} variant={p === page ? 'default' : 'outline'} size="sm" onClick={() => setPage(p)}>{p}</Button>
               ))}
-              <button disabled={page === data.totalPages} onClick={() => setPage(p => p + 1)}>→</button>
+              <Button variant="outline" size="sm" disabled={page === data.totalPages} onClick={() => setPage(p => p + 1)}>→</Button>
             </div>
           )}
         </>
       )}
 
-      {/* Modal crear / editar */}
       {modal.open && (
         <ProductModal
           mode={modal.mode}
@@ -211,7 +193,6 @@ export function ProductsPage() {
         />
       )}
 
-      {/* Confirmación de eliminación */}
       {deleteConfirm.open && (
         <ConfirmDialog
           message={`¿Eliminar el producto "${deleteConfirm.product.name}"? Esta acción no se puede deshacer.`}
@@ -258,15 +239,12 @@ function ProductModal({ mode, product, onClose, onSave }: ProductModalProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-
     if (!form.name || !form.sku || !form.price || form.stock === '' || form.minimumStock === '' || !form.category) {
       setError('Completá todos los campos obligatorios.')
       return
     }
-
     setIsSubmitting(true)
     setError(null)
-
     try {
       await onSave({
         name:         form.name.trim(),
@@ -279,118 +257,70 @@ function ProductModal({ mode, product, onClose, onSave }: ProductModalProps) {
       })
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
-      if (status === 409) {
-        setError('Ya existe un producto con ese SKU.')
-      } else {
-        setError('Error inesperado. Intentá de nuevo.')
-      }
+      setError(status === 409 ? 'Ya existe un producto con ese SKU.' : 'Error inesperado. Intentá de nuevo.')
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{mode === 'create' ? 'Nuevo producto' : 'Editar producto'}</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{mode === 'create' ? 'Nuevo producto' : 'Editar producto'}</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Nombre *</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })}
-              disabled={isSubmitting}
-            />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-1.5">
+            <Label>Nombre *</Label>
+            <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} disabled={isSubmitting} />
           </div>
 
-          <div className="form-group">
-            <label>Descripción (opcional)</label>
-            <textarea
-              className="form-textarea"
-              value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })}
-              disabled={isSubmitting}
-              rows={3}
-            />
+          <div className="grid gap-1.5">
+            <Label>Descripción (opcional)</Label>
+            <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} disabled={isSubmitting} rows={3} />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>SKU *</label>
-              <input
-                type="text"
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>SKU *</Label>
+              <Input
                 value={form.sku}
                 onChange={e => setForm({ ...form, sku: e.target.value })}
                 disabled={isSubmitting}
-                style={{ textTransform: 'uppercase' }}
+                className="uppercase"
               />
             </div>
-            <div className="form-group">
-              <label>Categoría *</label>
-              <input
-                type="text"
-                value={form.category}
-                onChange={e => setForm({ ...form, category: e.target.value })}
-                disabled={isSubmitting}
-              />
+            <div className="grid gap-1.5">
+              <Label>Categoría *</Label>
+              <Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} disabled={isSubmitting} />
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Precio *</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              value={form.price}
-              onChange={e => setForm({ ...form, price: e.target.value })}
-              disabled={isSubmitting}
-            />
+          <div className="grid gap-1.5">
+            <Label>Precio *</Label>
+            <Input type="number" min="0" step="0.01" placeholder="0.00" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} disabled={isSubmitting} />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Stock actual *</label>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={form.stock}
-                onChange={e => setForm({ ...form, stock: e.target.value })}
-                disabled={isSubmitting}
-              />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Stock actual *</Label>
+              <Input type="number" min="0" step="1" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} disabled={isSubmitting} />
             </div>
-            <div className="form-group">
-              <label>Stock mínimo *</label>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={form.minimumStock}
-                onChange={e => setForm({ ...form, minimumStock: e.target.value })}
-                disabled={isSubmitting}
-              />
+            <div className="grid gap-1.5">
+              <Label>Stock mínimo *</Label>
+              <Input type="number" min="0" step="1" value={form.minimumStock} onChange={e => setForm({ ...form, minimumStock: e.target.value })} disabled={isSubmitting} />
             </div>
           </div>
 
-          {error && <p className="auth-error">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -405,16 +335,19 @@ type ConfirmDialogProps = {
 
 function ConfirmDialog({ message, isLoading, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-card confirm-dialog" onClick={e => e.stopPropagation()}>
-        <p>{message}</p>
-        <div className="modal-actions">
-          <button className="btn-secondary" onClick={onCancel} disabled={isLoading}>Cancelar</button>
-          <button className="btn-danger" onClick={onConfirm} disabled={isLoading}>
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Confirmar eliminación</DialogTitle>
+          <DialogDescription>{message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel} disabled={isLoading}>Cancelar</Button>
+          <Button variant="destructive" onClick={onConfirm} disabled={isLoading}>
             {isLoading ? 'Eliminando...' : 'Eliminar'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

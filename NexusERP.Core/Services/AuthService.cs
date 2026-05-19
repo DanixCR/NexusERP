@@ -130,7 +130,8 @@ public class AuthService : IAuthService
                 Id = user.Id,
                 Email = user.Email,
                 FirstName = user.FirstName,
-                LastName = user.LastName
+                LastName = user.LastName,
+                Role = user.Role.ToString()
             }
         };
     }

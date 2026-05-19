@@ -8,6 +8,7 @@ public class User
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+    public UserRole Role { get; set; } = UserRole.User;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public List<RefreshToken> RefreshTokens { get; set; } = [];

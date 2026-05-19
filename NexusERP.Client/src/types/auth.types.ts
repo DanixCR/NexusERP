@@ -12,12 +12,15 @@ export type RegisterRequest = {
   lastName: string
 }
 
+export type UserRole = 'Admin' | 'User'
+
 // Espeja UserDto del backend
 export type User = {
   id: string        // GUID como string en el frontend
   email: string
   firstName: string
   lastName: string
+  role: UserRole
 }
 
 // Espeja LoginResponseDto del backend
@@ -41,4 +44,5 @@ export type AuthContextValue = AuthState & {
   login: (data: LoginRequest) => Promise<void>
   register: (data: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
+  setUser: (user: User | null) => void
 }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NexusERP.Core.DTOs.Users;
 using NexusERP.Core.Entities;
 using NexusERP.Core.Interfaces;
 using NexusERP.Infrastructure.Data;
@@ -72,4 +73,19 @@ public class UserRepository : IUserRepository
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task<IEnumerable<UserListItemDto>> GetAllAsync()
+        => await _context.Users
+            .OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
+            .Select(u => new UserListItemDto
+            {
+                Id        = u.Id,
+                Email     = u.Email,
+                FirstName = u.FirstName,
+                LastName  = u.LastName,
+                Role      = u.Role.ToString(),
+                IsActive  = u.IsActive,
+                CreatedAt = u.CreatedAt
+            })
+            .ToListAsync();
 }

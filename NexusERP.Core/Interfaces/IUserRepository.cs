@@ -1,3 +1,4 @@
+using NexusERP.Core.DTOs.Users;
 using NexusERP.Core.Entities;
 
 namespace NexusERP.Core.Interfaces;
@@ -13,4 +14,5 @@ public interface IUserRepository
     Task SaveRefreshTokenAsync(RefreshToken refreshToken);
     Task RevokeRefreshTokenAsync(string token, string? replacedByToken = null);
     Task RevokeAllUserRefreshTokensAsync(Guid userId);
+    Task<IEnumerable<UserListItemDto>> GetAllAsync();
 }

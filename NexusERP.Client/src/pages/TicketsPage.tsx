@@ -1,10 +1,51 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useTickets, useCreateTicket, useUpdateTicket, useDeleteTicket, useChangeTicketStatus } from '../hooks/useTickets'
 import { useAllClients, useAllEmployees } from '../hooks/useProjects'
 import type { Ticket, TicketPriority, TicketStatus, CreateTicketRequest } from '../types/ticket.types'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 
-type ModalMode = 'create' | 'edit'
+// ── Config de badges ─────────────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
+  Open:       { label: 'Abierto',     className: 'border-blue-300 text-blue-700 bg-blue-50' },
+  InProgress: { label: 'En progreso', className: 'border-purple-300 text-purple-700 bg-purple-50' },
+  Resolved:   { label: 'Resuelto',    className: 'border-green-300 text-green-700 bg-green-50' },
+  Closed:     { label: 'Cerrado',     className: 'border-zinc-300 text-zinc-600 bg-zinc-50' },
+}
+
+const PRIORITY_CONFIG: Record<TicketPriority, { label: string; className: string }> = {
+  Low:      { label: 'Baja',    className: 'border-zinc-300 text-zinc-500 bg-zinc-50' },
+  Medium:   { label: 'Media',   className: 'border-yellow-300 text-yellow-700 bg-yellow-50' },
+  High:     { label: 'Alta',    className: 'border-orange-300 text-orange-700 bg-orange-50' },
+  Critical: { label: 'Crítica', className: 'border-red-300 text-red-700 bg-red-50' },
+}
+
+function StatusBadge({ status }: { status: TicketStatus }) {
+  const cfg = STATUS_CONFIG[status]
+  return <Badge variant="outline" className={cfg.className}>{cfg.label}</Badge>
+}
+
+function PriorityBadge({ priority }: { priority: TicketPriority }) {
+  const cfg = PRIORITY_CONFIG[priority]
+  return <Badge variant="outline" className={cfg.className}>{cfg.label}</Badge>
+}
+
+// ── Tipos de estado local ────────────────────────────────────────────────────
+
 type ModalState =
   | { open: false }
   | { open: true; mode: 'create' }
@@ -22,54 +63,22 @@ type FormState = {
   assignedEmployeeId: string
 }
 
-const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
-  Open:       { label: 'Abierto',     className: 'badge-blue'   },
-  InProgress: { label: 'En progreso', className: 'badge-purple' },
-  Resolved:   { label: 'Resuelto',    className: 'badge-green'  },
-  Closed:     { label: 'Cerrado',     className: 'badge-gray'   },
-}
-
-const PRIORITY_CONFIG: Record<TicketPriority, { label: string; className: string }> = {
-  Low:      { label: 'Baja',    className: 'badge-green'  },
-  Medium:   { label: 'Media',   className: 'badge-yellow' },
-  High:     { label: 'Alta',    className: 'badge-orange' },
-  Critical: { label: 'Crítica', className: 'badge-red'    },
-}
-
-function StatusBadge({ status }: { status: TicketStatus }) {
-  const cfg = STATUS_CONFIG[status]
-  return <span className={`status-badge ${cfg.className}`}>{cfg.label}</span>
-}
-
-function PriorityBadge({ priority }: { priority: TicketPriority }) {
-  const cfg = PRIORITY_CONFIG[priority]
-  return <span className={`status-badge ${cfg.className}`}>{cfg.label}</span>
-}
-
 const BLANK_FORM: FormState = {
-  title: '',
-  description: '',
-  priority: 'Medium',
-  status: 'Open',
-  category: '',
-  clientId: '',
-  assignedEmployeeId: '',
+  title: '', description: '', priority: 'Medium',
+  status: 'Open', category: '', clientId: '', assignedEmployeeId: '',
 }
 
 function toFormState(t: Ticket): FormState {
   return {
-    title: t.title,
-    description: t.description,
-    priority: t.priority,
-    status: t.status,
-    category: t.category,
-    clientId: t.clientId ?? '',
-    assignedEmployeeId: t.assignedEmployeeId ?? '',
+    title: t.title, description: t.description, priority: t.priority,
+    status: t.status, category: t.category,
+    clientId: t.clientId ?? '', assignedEmployeeId: t.assignedEmployeeId ?? '',
   }
 }
 
+// ── Componente principal ─────────────────────────────────────────────────────
+
 export function TicketsPage() {
-  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('')
@@ -98,36 +107,21 @@ export function TicketsPage() {
   function handleSearchChange(value: string) {
     setSearch(value)
     if (searchTimer) clearTimeout(searchTimer)
-    const t = setTimeout(() => {
-      setDebouncedSearch(value)
-      setPage(1)
-    }, 300)
+    const t = setTimeout(() => { setDebouncedSearch(value); setPage(1) }, 300)
     setSearchTimer(t)
   }
 
-  function openCreate() {
-    setForm(BLANK_FORM)
-    setModal({ open: true, mode: 'create' })
-  }
-
-  function openEdit(ticket: Ticket) {
-    setForm(toFormState(ticket))
-    setModal({ open: true, mode: 'edit', ticket })
-  }
-
-  function closeModal() {
-    setModal({ open: false })
-  }
+  function openCreate() { setForm(BLANK_FORM); setModal({ open: true, mode: 'create' }) }
+  function openEdit(ticket: Ticket) { setForm(toFormState(ticket)); setModal({ open: true, mode: 'edit', ticket }) }
+  function closeModal() { setModal({ open: false }) }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!modal.open) return
 
     const payload: CreateTicketRequest = {
-      title: form.title,
-      description: form.description,
-      priority: form.priority,
-      category: form.category,
+      title: form.title, description: form.description,
+      priority: form.priority, category: form.category,
       clientId: form.clientId || null,
       assignedEmployeeId: form.assignedEmployeeId || null,
     }
@@ -137,10 +131,7 @@ export function TicketsPage() {
     } else {
       await updateMutation.mutateAsync({ id: modal.ticket.id, data: payload })
       if (form.status !== modal.ticket.status) {
-        await changeStatusMutation.mutateAsync({
-          id: modal.ticket.id,
-          data: { status: form.status },
-        })
+        await changeStatusMutation.mutateAsync({ id: modal.ticket.id, data: { status: form.status } })
       }
     }
     closeModal()
@@ -153,255 +144,229 @@ export function TicketsPage() {
   }
 
   const totalPages = data?.totalPages ?? 1
-  const isPending =
-    createMutation.isPending ||
-    updateMutation.isPending ||
-    deleteMutation.isPending ||
-    changeStatusMutation.isPending
-
-  const modalMode: ModalMode = modal.open ? modal.mode : 'create'
+  const isPending = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending || changeStatusMutation.isPending
+  const modalMode = modal.open ? modal.mode : 'create'
+  const editingTicket = modal.open && modal.mode === 'edit' ? modal.ticket : null
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <button className="btn-back" onClick={() => navigate('/dashboard')}>← Volver al dashboard</button>
-        <h1>Tickets</h1>
-        <button className="btn-primary" onClick={openCreate}>
-          + Nuevo ticket
-        </button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Tickets</h1>
+        <Button onClick={openCreate}>+ Nuevo ticket</Button>
       </div>
 
-      <div className="filters-bar">
-        <input
-          className="filter-search"
+      <div className="flex flex-wrap gap-3">
+        <Input
           placeholder="Buscar por título..."
           value={search}
           onChange={e => handleSearchChange(e.target.value)}
+          className="max-w-xs"
         />
-        <select
-          className="filter-select"
-          value={statusFilter}
-          onChange={e => { setStatusFilter(e.target.value as TicketStatus | ''); setPage(1) }}
-        >
-          <option value="">Todos los estados</option>
-          {(Object.keys(STATUS_CONFIG) as TicketStatus[]).map(s => (
-            <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
-          ))}
-        </select>
-        <select
-          className="filter-select"
-          value={priorityFilter}
-          onChange={e => { setPriorityFilter(e.target.value as TicketPriority | ''); setPage(1) }}
-        >
-          <option value="">Todas las prioridades</option>
-          {(Object.keys(PRIORITY_CONFIG) as TicketPriority[]).map(p => (
-            <option key={p} value={p}>{PRIORITY_CONFIG[p].label}</option>
-          ))}
-        </select>
+        <Select value={statusFilter || 'all'} onValueChange={v => { setStatusFilter(v === 'all' ? '' : (v ?? '') as TicketStatus); setPage(1) }}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Todos los estados" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los estados</SelectItem>
+            {(Object.keys(STATUS_CONFIG) as TicketStatus[]).map(s => (
+              <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={priorityFilter || 'all'} onValueChange={v => { setPriorityFilter(v === 'all' ? '' : (v ?? '') as TicketPriority); setPage(1) }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Todas las prioridades" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las prioridades</SelectItem>
+            {(Object.keys(PRIORITY_CONFIG) as TicketPriority[]).map(p => (
+              <SelectItem key={p} value={p}>{PRIORITY_CONFIG[p].label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {isLoading && <div className="state-message">Cargando tickets...</div>}
-      {isError && <div className="state-message error">Error al cargar los tickets.</div>}
+      {isLoading && <p className="py-6 text-center text-sm text-muted-foreground">Cargando tickets...</p>}
+      {isError && <p className="py-6 text-center text-sm text-destructive">Error al cargar los tickets.</p>}
 
       {!isLoading && !isError && (
         <>
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Título</th>
-                  <th>Estado</th>
-                  <th>Prioridad</th>
-                  <th>Categoría</th>
-                  <th>Cliente</th>
-                  <th>Asignado a</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Prioridad</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Asignado a</TableHead>
+                  <TableHead className="w-[80px]">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data?.items.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="empty-row">No hay tickets registrados.</td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">No hay tickets registrados.</TableCell>
+                  </TableRow>
                 )}
                 {data?.items.map(ticket => (
-                  <tr key={ticket.id}>
-                    <td>
-                      <div className="cell-primary">{ticket.title}</div>
-                      <div className="cell-secondary">{ticket.description}</div>
-                    </td>
-                    <td><StatusBadge status={ticket.status} /></td>
-                    <td><PriorityBadge priority={ticket.priority} /></td>
-                    <td>{ticket.category}</td>
-                    <td>{ticket.clientName ?? <span style={{ color: 'var(--text)' }}>—</span>}</td>
-                    <td>{ticket.assignedEmployeeName ?? <span style={{ color: 'var(--text)' }}>—</span>}</td>
-                    <td>
-                      <div className="actions-cell">
-                        <button className="btn-icon" title="Editar" onClick={() => openEdit(ticket)}>✏️</button>
-                        <button className="btn-icon" title="Eliminar" onClick={() => setDeleteConfirm({ open: true, ticket })}>🗑️</button>
+                  <TableRow key={ticket.id}>
+                    <TableCell>
+                      <div className="font-medium">{ticket.title}</div>
+                      <div className="max-w-[240px] truncate text-sm text-muted-foreground">{ticket.description}</div>
+                    </TableCell>
+                    <TableCell><StatusBadge status={ticket.status} /></TableCell>
+                    <TableCell><PriorityBadge priority={ticket.priority} /></TableCell>
+                    <TableCell className="text-sm">{ticket.category}</TableCell>
+                    <TableCell className="text-sm">{ticket.clientName ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-sm">{ticket.assignedEmployeeName ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(ticket)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ open: true, ticket })}><Trash2 className="h-4 w-4" /></Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {totalPages > 1 && (
-            <div className="pagination">
-              <button onClick={() => setPage(p => p - 1)} disabled={page === 1}>←</button>
+            <div className="flex items-center justify-center gap-1 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 1}>←</Button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                <button
-                  key={p}
-                  className={p === page ? 'active' : ''}
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </button>
+                <Button key={p} variant={p === page ? 'default' : 'outline'} size="sm" onClick={() => setPage(p)}>{p}</Button>
               ))}
-              <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages}>→</button>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page === totalPages}>→</Button>
             </div>
           )}
         </>
       )}
 
+      {/* Modal crear / editar */}
       {modal.open && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{modalMode === 'create' ? 'Nuevo ticket' : 'Editar ticket'}</h2>
-              <button className="modal-close" onClick={closeModal}>✕</button>
-            </div>
+        <Dialog open onOpenChange={(open) => { if (!open) closeModal() }}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{modalMode === 'create' ? 'Nuevo ticket' : 'Editar ticket'}</DialogTitle>
+            </DialogHeader>
 
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Título *</label>
-                <input
-                  required
-                  value={form.title}
-                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  disabled={isPending}
-                />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid gap-1.5">
+                <Label>Título *</Label>
+                <Input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} disabled={isPending} />
               </div>
 
-              <div className="form-group">
-                <label>Descripción *</label>
-                <textarea
-                  className="form-textarea"
-                  required
-                  rows={3}
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  disabled={isPending}
-                />
+              <div className="grid gap-1.5">
+                <Label>Descripción *</Label>
+                <Textarea required rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} disabled={isPending} />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Categoría *</label>
-                  <input
-                    required
-                    value={form.category}
-                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                    disabled={isPending}
-                  />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label>Categoría *</Label>
+                  <Input required value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} disabled={isPending} />
                 </div>
-                <div className="form-group">
-                  <label>Prioridad *</label>
-                  <select
-                    className="form-select"
-                    value={form.priority}
-                    onChange={e => setForm(f => ({ ...f, priority: e.target.value as TicketPriority }))}
-                    disabled={isPending}
-                  >
-                    {(Object.keys(PRIORITY_CONFIG) as TicketPriority[]).map(p => (
-                      <option key={p} value={p}>{PRIORITY_CONFIG[p].label}</option>
-                    ))}
-                  </select>
+                <div className="grid gap-1.5">
+                  <Label>Prioridad *</Label>
+                  <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: (v ?? f.priority) as TicketPriority }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(PRIORITY_CONFIG) as TicketPriority[]).map(p => (
+                        <SelectItem key={p} value={p}>{PRIORITY_CONFIG[p].label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               {modalMode === 'edit' && (
-                <div className="form-group">
-                  <label>Estado *</label>
-                  <select
-                    className="form-select"
-                    value={form.status}
-                    onChange={e => setForm(f => ({ ...f, status: e.target.value as TicketStatus }))}
-                    disabled={isPending}
-                  >
-                    {(Object.keys(STATUS_CONFIG) as TicketStatus[]).map(s => (
-                      <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
-                    ))}
-                  </select>
+                <div className="grid gap-1.5">
+                  <Label>Estado *</Label>
+                  <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v as TicketStatus }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(STATUS_CONFIG) as TicketStatus[]).map(s => (
+                        <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
-              <div className="form-group">
-                <label>Cliente (opcional)</label>
-                <select
-                  className="form-select"
-                  value={form.clientId}
-                  onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
+              <div className="grid gap-1.5">
+                <Label>Cliente (opcional)</Label>
+                <Select
+                  value={form.clientId || 'none'}
+                  onValueChange={v => setForm(f => ({ ...f, clientId: v === 'none' ? '' : (v ?? '') }))}
                   disabled={isPending}
                 >
-                  <option value="">Sin asignar</option>
-                  {clientsData?.items.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin asignar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin asignar</SelectItem>
+                    {editingTicket?.clientId && !clientsData?.items?.some(c => c.id === editingTicket.clientId) && (
+                      <SelectItem value={editingTicket.clientId}>{editingTicket.clientName ?? editingTicket.clientId}</SelectItem>
+                    )}
+                    {clientsData?.items?.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="form-group">
-                <label>Empleado asignado (opcional)</label>
-                <select
-                  className="form-select"
-                  value={form.assignedEmployeeId}
-                  onChange={e => setForm(f => ({ ...f, assignedEmployeeId: e.target.value }))}
+              <div className="grid gap-1.5">
+                <Label>Empleado asignado (opcional)</Label>
+                <Select
+                  value={form.assignedEmployeeId || 'none'}
+                  onValueChange={v => setForm(f => ({ ...f, assignedEmployeeId: v === 'none' ? '' : (v ?? '') }))}
                   disabled={isPending}
                 >
-                  <option value="">Sin asignar</option>
-                  {employeesData?.items.map(emp => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.firstName} {emp.lastName}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin asignar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin asignar</SelectItem>
+                    {editingTicket?.assignedEmployeeId && !employeesData?.items?.some(e => e.id === editingTicket.assignedEmployeeId) && (
+                      <SelectItem value={editingTicket.assignedEmployeeId}>{editingTicket.assignedEmployeeName ?? editingTicket.assignedEmployeeId}</SelectItem>
+                    )}
+                    {employeesData?.items?.map(emp => (
+                      <SelectItem key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={closeModal} disabled={isPending}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary" disabled={isPending}>
-                  {isPending ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeModal} disabled={isPending}>Cancelar</Button>
+                <Button type="submit" disabled={isPending}>{isPending ? 'Guardando...' : 'Guardar'}</Button>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
+      {/* Confirmación de eliminación */}
       {deleteConfirm.open && (
-        <div className="modal-overlay" onClick={() => setDeleteConfirm({ open: false })}>
-          <div className="modal-card confirm-dialog" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Eliminar ticket</h2>
-              <button className="modal-close" onClick={() => setDeleteConfirm({ open: false })}>✕</button>
-            </div>
-            <p>
-              ¿Eliminar el ticket <strong>{deleteConfirm.ticket.title}</strong>? Esta acción no se puede deshacer.
-            </p>
-            <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setDeleteConfirm({ open: false })} disabled={isPending}>
-                Cancelar
-              </button>
-              <button className="btn-danger" onClick={handleDelete} disabled={isPending}>
+        <Dialog open onOpenChange={(open) => { if (!open) setDeleteConfirm({ open: false }) }}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Eliminar ticket</DialogTitle>
+              <DialogDescription>
+                ¿Eliminar el ticket <strong>{deleteConfirm.ticket.title}</strong>? Esta acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteConfirm({ open: false })} disabled={isPending}>Cancelar</Button>
+              <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
                 {isPending ? 'Eliminando...' : 'Eliminar'}
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )
