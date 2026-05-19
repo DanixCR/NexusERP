@@ -43,10 +43,11 @@ El proyecto está en desarrollo activo y tiene planificada una integración con 
 | 👨‍💼 **Empleados** | CRUD con departamentos, filtros y paginación |
 | 📦 **Inventario** | CRUD de productos con categorías, stock y alertas de stock mínimo |
 | 🎫 **Tickets** | CRUD de tickets de soporte con prioridad, estado, categoría y asignación a empleados |
+| 🎨 **Layout / UI** | Tailwind CSS v4 + shadcn/ui con sidebar colapsable, diseño responsivo y tema Zinc |
+| 👤 **Usuarios y Roles** | Gestión de usuarios del sistema con roles (Admin, Manager, User), perfil editable y panel de administración |
 
 ### 🔜 Próximamente
 
-- 🎨 **Rediseño UI** — Migración a Tailwind CSS + shadcn/ui
 - 📊 **Módulo de Reportes** — Dashboards con métricas y exportación
 - 🤖 **Integración IA** — Agentes con Claude API (Anthropic) y Model Context Protocol (MCP)
 - ☁️ **Deploy en Azure** — App Service + Azure SQL Database
@@ -125,6 +126,8 @@ NexusERP/
 | **Lenguaje frontend** | TypeScript | 6.0 |
 | **Data fetching** | TanStack Query (React Query) | v5 |
 | **Routing** | React Router | v7 |
+| **Estilos** | Tailwind CSS | v4 |
+| **UI Components** | shadcn/ui | — |
 | **Linter** | ESLint + typescript-eslint | 9.0 |
 | **Deploy** | Azure App Service + Azure SQL | — |
 
@@ -227,11 +230,13 @@ npm run dev
 - [x] Módulo Empleados (CRUD + departamentos)
 - [x] Módulo Inventario (CRUD + stock mínimo + alertas)
 - [x] Módulo Tickets (CRUD + prioridad + asignación)
+- [x] Módulo Usuarios y Roles (gestión de usuarios del sistema, roles, perfil editable)
 
-### 🔄 Fase 3 — UI/UX profesional *(en progreso)*
-- [ ] Migración a Tailwind CSS + shadcn/ui
-- [ ] Diseño responsivo completo
-- [ ] Temas claro / oscuro
+### ✅ Fase 3 — UI/UX profesional
+- [x] Migración a Tailwind CSS v4 + shadcn/ui
+- [x] Sidebar colapsable con navegación por módulos
+- [x] Diseño responsivo completo
+- [x] Diseño con tema Zinc (shadcn/ui)
 
 ### 📋 Fase 4 — Reportes & Analítica
 - [ ] Dashboard con métricas en tiempo real
